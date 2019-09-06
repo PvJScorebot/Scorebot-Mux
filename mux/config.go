@@ -2,6 +2,7 @@ package mux
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"os"
 	"time"
@@ -20,13 +21,13 @@ const (
 var (
 	// ErrInvalidConfig is returned by the 'Start' function when the config is missing or
 	// is not valid during startup.
-	ErrInvalidConfig = xerrors.New("configuration is invalid or missing")
+	ErrInvalidConfig = errors.New("configuration is invalid or missing")
 	// ErrInvalidTimeout is returned if the specified timeout value is less than zero.
-	ErrInvalidTimeout = xerrors.New("timeout must be grater or equal to than zero")
+	ErrInvalidTimeout = errors.New("timeout must be grater or equal to than zero")
 )
 
-// Mux is a struct that repersents a Muxer that can split and log
-// traffic bwteen two or more endpoints
+// Mux is a struct that represents a Muxer that can split and log
+// traffic between two or more endpoints
 type Mux struct {
 	proxy  *proxy.Proxy
 	config *Config
@@ -51,7 +52,7 @@ type Secondary struct {
 	Rewrite map[string]string `json:"rewrite,omitempty"`
 }
 
-// Defaults returns a JSON string repersentation of the default config.
+// Defaults returns a JSON string representation of the default config.
 // Used for creating and understanding the config file structure.
 func Defaults() string {
 	c := &Config{

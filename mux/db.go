@@ -42,7 +42,7 @@ const (
 		") VALUES (NOW(), ?, ?, ?, ?, ?, ?)"
 )
 
-// Database repersents the SQL Backend data provider.
+// Database represents the SQL Backend data provider.
 type Database struct {
 	Host     string `json:"host"`
 	User     string `json:"username"`
