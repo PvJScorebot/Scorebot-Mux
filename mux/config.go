@@ -3,12 +3,12 @@ package mux
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
 
 	"github.com/iDigitalFlame/switchproxy/proxy"
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -84,20 +84,18 @@ func Defaults() string {
 // Start is a method that starts the Mux process and inits the
 // database and proxy switch.
 func (m *Mux) Start() error {
-	if m.config == nil {
-		return ErrInvalidConfig
-	}
-	if m.config.Database == nil {
+	if m.config == nil || m.config.Database == nil {
 		return ErrInvalidConfig
 	}
 	if err := m.config.Database.init(); err != nil {
-		return xerrors.Errorf("unable to init database: %w", err)
+		return fmt.Errorf("unable to init database: %w", err)
 	}
+	defer m.config.Database.close()
 	m.proxy = proxy.NewProxyEx(m.config.Listen, m.config.Cert, m.config.Key)
 	for i := range m.config.Proxies {
 		s, err := proxy.NewSwitch(m.config.Proxies[i].URL, m.config.Timeout)
 		if err != nil {
-			return xerrors.Errorf("unable to configure secondary switch: %w", err)
+			return fmt.Errorf("unable to configure secondary switch: %w", err)
 		}
 		for k, v := range m.config.Proxies[i].Rewrite {
 			s.Rewrite(k, v)
@@ -110,14 +108,12 @@ func (m *Mux) Start() error {
 	}
 	p, err := proxy.NewSwitch(m.config.Scorebot, m.config.Timeout)
 	if err != nil {
-		return xerrors.Errorf("unable to configure primary switch: %w", err)
+		return fmt.Errorf("unable to configure primary switch: %w", err)
 	}
 	p.Pre = m.config.Database.saveRequest
 	p.Post = m.config.Database.saveResponse
 	m.proxy.Primary(p)
-	err = m.proxy.Start()
-	m.config.Database.close()
-	return err
+	return m.proxy.Start()
 }
 
 // NewMux creates and returns a new Mux instance from the specified config.
@@ -139,18 +135,18 @@ func NewMux(c *Config) (*Mux, error) {
 func Load(s string) (*Config, error) {
 	f, err := os.Stat(s)
 	if err != nil {
-		return nil, xerrors.Errorf("cannot load file \"%s\": %w", s, err)
+		return nil, fmt.Errorf("cannot load file \"%s\": %w", s, err)
 	}
 	if f.IsDir() {
-		return nil, xerrors.Errorf("cannot load \"%s\": path is not a file", s)
+		return nil, fmt.Errorf("cannot load \"%s\": path is not a file", s)
 	}
 	var c *Config
 	b, err := ioutil.ReadFile(s)
 	if err != nil {
-		return nil, xerrors.Errorf("unable to read file \"%s\": %w", s, err)
+		return nil, fmt.Errorf("unable to read file \"%s\": %w", s, err)
 	}
 	if err := json.Unmarshal(b, &c); err != nil {
-		return nil, xerrors.Errorf("cannot read file \"%s\" into JSON: %w", s, err)
+		return nil, fmt.Errorf("cannot read file \"%s\" into JSON: %w", s, err)
 	}
 	return c, nil
 }

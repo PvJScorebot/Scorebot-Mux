@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"golang.org/x/xerrors"
-
 	// Import MySQL Driver
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -57,29 +55,29 @@ type Database struct {
 func (d *Database) init() error {
 	var err error
 	if d.db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s/%s", d.User, d.Password, d.Host, d.Database)); err != nil {
-		return xerrors.Errorf("could not open mysql database: %w", err)
+		return fmt.Errorf("could not open mysql database: %w", err)
 	}
 	if s, err := d.db.Prepare(sqlCreateRequests); err == nil {
 		defer s.Close()
 		if _, err := s.Exec(); err != nil {
-			return xerrors.Errorf("could not create requests table: %w", err)
+			return fmt.Errorf("could not create requests table: %w", err)
 		}
 	} else {
-		return xerrors.Errorf("could no prepare SQL statement: %w", err)
+		return fmt.Errorf("could no prepare SQL statement: %w", err)
 	}
 	if s, err := d.db.Prepare(sqlCreateResponse); err == nil {
 		defer s.Close()
 		if _, err := s.Exec(); err != nil {
-			return xerrors.Errorf("could not create responses table: %w", err)
+			return fmt.Errorf("could not create responses table: %w", err)
 		}
 	} else {
-		return xerrors.Errorf("could no prepare SQL statement: %w", err)
+		return fmt.Errorf("could no prepare SQL statement: %w", err)
 	}
 	if d.request, err = d.db.Prepare(sqlInsertRequest); err != nil {
-		return xerrors.Errorf("could not prepare SQL statement: %w", err)
+		return fmt.Errorf("could not prepare SQL statement: %w", err)
 	}
 	if d.response, err = d.db.Prepare(sqlInsertResponse); err != nil {
-		return xerrors.Errorf("could not prepare SQL statement: %w", err)
+		return fmt.Errorf("could not prepare SQL statement: %w", err)
 	}
 	return nil
 }
