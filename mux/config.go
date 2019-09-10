@@ -91,7 +91,7 @@ func (m *Mux) Start() error {
 		return fmt.Errorf("unable to init database: %w", err)
 	}
 	defer m.config.Database.close()
-	m.proxy = proxy.NewProxyEx(m.config.Listen, m.config.Cert, m.config.Key)
+	m.proxy = proxy.NewProxyEx(m.config.Timeout, m.config.Listen, m.config.Cert, m.config.Key)
 	for i := range m.config.Proxies {
 		s, err := proxy.NewSwitch(m.config.Proxies[i].URL, m.config.Timeout)
 		if err != nil {
