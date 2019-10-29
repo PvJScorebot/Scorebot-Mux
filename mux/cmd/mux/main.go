@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	version = "v1.0"
+	version = "v2.0"
 )
 
 func main() {
@@ -81,16 +81,13 @@ func main() {
 		}
 	}
 
-	mux, err := mux.NewMux(c)
+	m, err := mux.New(c)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 		os.Exit(1)
 	}
-
-	if err := mux.Start(); err != nil {
+	if err := m.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err.Error())
 		os.Exit(1)
 	}
-
-	os.Exit(0)
 }

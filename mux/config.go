@@ -7,8 +7,6 @@ import (
 	"io/ioutil"
 	"os"
 	"time"
-
-	"github.com/iDigitalFlame/switchproxy/proxy"
 )
 
 const (
@@ -25,13 +23,6 @@ var (
 	// ErrInvalidTimeout is returned if the specified timeout value is less than zero.
 	ErrInvalidTimeout = errors.New("timeout must be grater or equal to than zero")
 )
-
-// Mux is a struct that represents a Muxer that can split and log
-// traffic between two or more endpoints
-type Mux struct {
-	proxy  *proxy.Proxy
-	config *Config
-}
 
 // Config is a struct that contains the configuration options needed to
 // start a Mux struct.
@@ -81,48 +72,16 @@ func Defaults() string {
 	return string(b)
 }
 
-// Start is a method that starts the Mux process and inits the
-// database and proxy switch.
-func (m *Mux) Start() error {
-	if m.config == nil || m.config.Database == nil {
-		return ErrInvalidConfig
-	}
-	if err := m.config.Database.init(); err != nil {
-		return fmt.Errorf("unable to init database: %w", err)
-	}
-	defer m.config.Database.close()
-	m.proxy = proxy.NewProxyEx(m.config.Timeout, m.config.Listen, m.config.Cert, m.config.Key)
-	for i := range m.config.Proxies {
-		s, err := proxy.NewSwitch(m.config.Proxies[i].URL, m.config.Timeout)
-		if err != nil {
-			return fmt.Errorf("unable to configure secondary switch: %w", err)
-		}
-		for k, v := range m.config.Proxies[i].Rewrite {
-			s.Rewrite(k, v)
-		}
-		if !m.config.Proxies[i].Ignore {
-			s.Pre = m.config.Database.saveRequest
-			s.Post = m.config.Database.saveResponse
-		}
-		m.proxy.AddSecondary(s)
-	}
-	p, err := proxy.NewSwitch(m.config.Scorebot, m.config.Timeout)
-	if err != nil {
-		return fmt.Errorf("unable to configure primary switch: %w", err)
-	}
-	p.Pre = m.config.Database.saveRequest
-	p.Post = m.config.Database.saveResponse
-	m.proxy.Primary(p)
-	return m.proxy.Start()
-}
-
-// NewMux creates and returns a new Mux instance from the specified config.
-func NewMux(c *Config) (*Mux, error) {
+// New creates and returns a new Mux instance from the specified config.
+func New(c *Config) (*Mux, error) {
 	if c.Timeout < 0 {
 		return nil, ErrInvalidTimeout
 	}
 	if c.Database == nil {
-		return nil, ErrInvalidConfig
+		return nil, fmt.Errorf("database: %w", ErrInvalidConfig)
+	}
+	if len(c.Scorebot) == 0 {
+		return nil, fmt.Errorf("scorebot: %w", ErrInvalidConfig)
 	}
 	if len(c.Listen) == 0 {
 		c.Listen = DefaultListen
@@ -131,7 +90,7 @@ func NewMux(c *Config) (*Mux, error) {
 	return &Mux{config: c}, nil
 }
 
-// Load attempts to create a load a config file from the specified path 's'.
+// Load attempts to create a load a config file from the specified path.
 func Load(s string) (*Config, error) {
 	f, err := os.Stat(s)
 	if err != nil {

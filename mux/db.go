@@ -3,16 +3,17 @@ package mux
 import (
 	"database/sql"
 	"fmt"
-	"net/http"
 
 	// Import MySQL Driver
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/iDigitalFlame/switchproxy/proxy"
 )
 
 const (
 	sqlCreateRequests = "" +
 		"CREATE TABLE IF NOT EXISTS requests (" +
 		"ID BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT, " +
+		"UUID CHAR(36) NOT NULL, " +
 		"Time DATETIME NOT NULL, " +
 		"URL VARCHAR(256) NOT NULL, " +
 		"Path VARCHAR(256) NOT NULL, " +
@@ -23,6 +24,7 @@ const (
 	sqlCreateResponse = "" +
 		"CREATE TABLE IF NOT EXISTS responses (" +
 		"ID BIGINT NOT NULL PRIMARY KEY AUTO_INCREMENT, " +
+		"UUID CHAR(36) NOT NULL, " +
 		"Time DATETIME NOT NULL, " +
 		"URL VARCHAR(256) NOT NULL, " +
 		"Path VARCHAR(256) NOT NULL, " +
@@ -32,12 +34,12 @@ const (
 		"Data VARBINARY(32768) NULL)"
 	sqlInsertRequest = "" +
 		"INSERT INTO requests (" +
-		"Time, URL, Path, IP, Method, Token, Data" +
-		") VALUES (NOW(), ?, ?, ?, ?, ?, ?)"
+		"UUID, Time, URL, Path, IP, Method, Token, Data" +
+		") VALUES (?, NOW(), ?, ?, ?, ?, ?, ?)"
 	sqlInsertResponse = "" +
 		"INSERT INTO responses (" +
-		"Time, URL, Path, IP, Method, Result, Data" +
-		") VALUES (NOW(), ?, ?, ?, ?, ?, ?)"
+		"UUID, Time, URL, Path, IP, Method, Result, Data" +
+		") VALUES (?, NOW(), ?, ?, ?, ?, ?, ?)"
 )
 
 // Database represents the SQL Backend data provider.
@@ -57,21 +59,21 @@ func (d *Database) init() error {
 	if d.db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@%s/%s", d.User, d.Password, d.Host, d.Database)); err != nil {
 		return fmt.Errorf("could not open mysql database: %w", err)
 	}
-	if s, err := d.db.Prepare(sqlCreateRequests); err == nil {
-		defer s.Close()
-		if _, err := s.Exec(); err != nil {
-			return fmt.Errorf("could not create requests table: %w", err)
-		}
-	} else {
-		return fmt.Errorf("could no prepare SQL statement: %w", err)
+	s, err := d.db.Prepare(sqlCreateRequests)
+	if err != nil {
+		return fmt.Errorf("could not prepare SQL statement: %w", err)
 	}
-	if s, err := d.db.Prepare(sqlCreateResponse); err == nil {
-		defer s.Close()
-		if _, err := s.Exec(); err != nil {
-			return fmt.Errorf("could not create responses table: %w", err)
-		}
-	} else {
-		return fmt.Errorf("could no prepare SQL statement: %w", err)
+	_, err = s.Exec()
+	if s.Close(); err != nil {
+		return fmt.Errorf("could not create requests table: %w", err)
+	}
+	s, err = d.db.Prepare(sqlCreateResponse)
+	if err != nil {
+		return fmt.Errorf("could not prepare SQL statement: %w", err)
+	}
+	_, err = s.Exec()
+	if s.Close(); err != nil {
+		return fmt.Errorf("could not create responses table: %w", err)
 	}
 	if d.request, err = d.db.Prepare(sqlInsertRequest); err != nil {
 		return fmt.Errorf("could not prepare SQL statement: %w", err)
@@ -82,14 +84,21 @@ func (d *Database) init() error {
 	return nil
 }
 func (d *Database) close() error {
-	d.request.Close()
-	d.response.Close()
+	if d.request != nil {
+		d.request.Close()
+	}
+	if d.response != nil {
+		d.response.Close()
+	}
+	if d.db == nil {
+		return nil
+	}
 	return d.db.Close()
 }
-func (d *Database) saveRequest(url, path, ip, method string, header http.Header, data []byte) {
-	token := header.Get("SBE-AUTH")
-	d.request.Exec(url, path, ip, method, token, data)
-}
-func (d *Database) saveResponse(url, path, ip, method string, status int, header http.Header, data []byte) {
-	d.response.Exec(url, path, ip, method, status, data)
+func (d *Database) log(r proxy.Result) {
+	if r.IsResponse() {
+		d.response.Exec(r.UUID, r.URL, r.Path, r.IP, r.Method, r.Status, r.Content)
+	} else {
+		d.request.Exec(r.UUID, r.URL, r.Path, r.IP, r.Method, r.Headers.Get("SBE-AUTH"), r.Content)
+	}
 }
