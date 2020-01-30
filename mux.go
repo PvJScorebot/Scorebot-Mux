@@ -1,3 +1,19 @@
+// Copyright(C) 2020 iDigitalFlame
+//
+// This program is free software: you can redistribute it and / or modify
+// it under the terms of the GNU Affero General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.See the
+// GNU Affero General Public License for more details.
+//
+// You should have received a copy of the GNU Affero General Public License
+// along with this program.If not, see <https://www.gnu.org/licenses/>.
+//
+
 package mux
 
 import (
@@ -6,14 +22,14 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/iDigitalFlame/switchproxy/proxy"
+	"github.com/iDigitalFlame/switchproxy"
 )
 
 // Mux is a struct that represents a Muxer that can split and log
 // traffic between two or more endpoints
 type Mux struct {
 	err    error
-	proxy  *proxy.Proxy
+	proxy  *switchproxy.Proxy
 	config *Config
 }
 
@@ -27,13 +43,13 @@ func (m *Mux) Start() error {
 		return fmt.Errorf("unable to init database: %w", err)
 	}
 	defer m.config.Database.close()
-	m.proxy = proxy.New(
+	m.proxy = switchproxy.New(
 		m.config.Listen,
-		proxy.Timeout(m.config.Timeout),
-		proxy.TLS(m.config.Cert, m.config.Key),
+		switchproxy.Timeout(m.config.Timeout),
+		switchproxy.TLS(m.config.Cert, m.config.Key),
 	)
 	for i := range m.config.Proxies {
-		s, err := proxy.NewSwitchTimeout(m.config.Proxies[i].URL, m.config.Timeout)
+		s, err := switchproxy.NewSwitchTimeout(m.config.Proxies[i].URL, m.config.Timeout)
 		if err != nil {
 			return fmt.Errorf("unable to configure secondary switch: %w", err)
 		}
@@ -46,7 +62,7 @@ func (m *Mux) Start() error {
 		}
 		m.proxy.AddSecondary(s)
 	}
-	p, err := proxy.NewSwitchTimeout(m.config.Scorebot, m.config.Timeout)
+	p, err := switchproxy.NewSwitchTimeout(m.config.Scorebot, m.config.Timeout)
 	if err != nil {
 		return fmt.Errorf("unable to configure primary switch: %w", err)
 	}
