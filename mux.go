@@ -73,6 +73,7 @@ func (m *Mux) Start() error {
 	signal.Notify(w, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
 	go m.start(w)
 	<-w
+	signal.Stop(w)
 	m.proxy.Stop()
 	return m.err
 }
