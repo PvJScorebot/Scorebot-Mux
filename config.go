@@ -43,20 +43,20 @@ var (
 // Config is a struct that contains the configuration options needed to
 // start a Mux struct.
 type Config struct {
-	Key      string        `json:"key,omitempty"`
+	Database *Database     `json:"db"`
 	Cert     string        `json:"cert,omitempty"`
 	Listen   string        `json:"listen,omitempty"`
-	Timeout  time.Duration `json:"timeout,omitempty"`
-	Proxies  []*Secondary  `json:"proxies,omitempty"`
 	Scorebot string        `json:"scorebot"`
-	Database *Database     `json:"db"`
+	Key      string        `json:"key,omitempty"`
+	Proxies  []*Secondary  `json:"proxies,omitempty"`
+	Timeout  time.Duration `json:"timeout,omitempty"`
 }
 
 // Secondary is a struct that holds secondary Proxy info.
 type Secondary struct {
+	Rewrite map[string]string `json:"rewrite,omitempty"`
 	URL     string            `json:"url"`
 	Ignore  bool              `json:"ignore,omitempty"`
-	Rewrite map[string]string `json:"rewrite,omitempty"`
 }
 
 // Defaults returns a JSON string representation of the default config.

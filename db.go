@@ -20,9 +20,10 @@ import (
 	"database/sql"
 	"fmt"
 
+	"github.com/PurpleSec/switchproxy"
+
 	// Import MySQL Driver
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/iDigitalFlame/switchproxy"
 )
 
 const (
@@ -60,14 +61,13 @@ const (
 
 // Database represents the SQL Backend data provider.
 type Database struct {
-	Host     string `json:"host"`
+	response *sql.Stmt
+	db       *sql.DB
+	request  *sql.Stmt
 	User     string `json:"username"`
 	Database string `json:"name"`
 	Password string `json:"password"`
-
-	db       *sql.DB
-	request  *sql.Stmt
-	response *sql.Stmt
+	Host     string `json:"host"`
 }
 
 func (d *Database) init() error {

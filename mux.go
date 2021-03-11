@@ -22,7 +22,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/iDigitalFlame/switchproxy"
+	"github.com/PurpleSec/switchproxy"
 )
 
 // Mux is a struct that represents a Muxer that can split and log
@@ -70,7 +70,7 @@ func (m *Mux) Start() error {
 	p.Post = m.config.Database.log
 	m.proxy.Primary(p)
 	w := make(chan os.Signal, 1)
-	signal.Notify(w, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL)
+	signal.Notify(w, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	go m.start(w)
 	<-w
 	signal.Stop(w)
