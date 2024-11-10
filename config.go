@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 )
@@ -68,7 +67,7 @@ func Defaults() string {
 		Listen:  DefaultListen,
 		Timeout: DefaultTimeout,
 		Proxies: []*Secondary{
-			&Secondary{
+			{
 				URL:    "http://proxy1",
 				Ignore: false,
 				Rewrite: map[string]string{
@@ -94,7 +93,7 @@ func New(c *Config) (*Mux, error) {
 		return nil, ErrInvalidTimeout
 	}
 	if c.Database == nil {
-		return nil, fmt.Errorf("database: %w", ErrInvalidConfig)
+		return nil, errors.New(`"database" section`)
 	}
 	if len(c.Scorebot) == 0 {
 		return nil, fmt.Errorf("scorebot: %w", ErrInvalidConfig)
@@ -116,7 +115,7 @@ func Load(s string) (*Config, error) {
 		return nil, fmt.Errorf("cannot load \"%s\": path is not a file", s)
 	}
 	var c *Config
-	b, err := ioutil.ReadFile(s)
+	b, err := os.ReadFile(s)
 	if err != nil {
 		return nil, fmt.Errorf("unable to read file \"%s\": %w", s, err)
 	}

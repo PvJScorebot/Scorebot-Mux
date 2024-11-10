@@ -38,7 +38,7 @@ func main() {
 	Key := flag.String("key", "", "Path to TLS Key File.")
 	Cert := flag.String("cert", "", "Path to TLS Certificate File.")
 
-	Timeout := flag.Int("timeout", int(mux.DefaultTimeout), "Muxer Request Timeout. (in seconds)")
+	Timeout := flag.Int("timeout", mux.DefaultTimeout, "Muxer Request Timeout. (in seconds)")
 
 	Scorebot := flag.String("sbe", "", "Scorebot Core Address or URL.")
 
